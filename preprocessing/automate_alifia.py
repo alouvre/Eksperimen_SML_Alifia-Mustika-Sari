@@ -1,9 +1,27 @@
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+#!/usr/bin/env python3
+"""
+automate_alifia.py
+------------------
+• Dapat di‑import: from automate_alifia import preprocess_student_data
+• Dapat dijalankan via CLI  : python automate_alifia.py input.csv output.csv
+"""
+
+import sys
 import os
+import pandas as pd
+import joblib
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
-def preprocess_student_data(df_raw, selected_features=None, is_training=True, scaler=None, save_path="preprocessing_output", save_result=False):
+# ---------- FUNGSI PREPROCESSING UTAMA ----------
+def preprocess_student_data(
+        df_raw,
+        selected_features=None,
+        is_training: bool = True,
+        scaler: StandardScaler | None = None,
+        save_path="preprocessing_output",
+        save_result=False
+        ):
     """
     Fungsi preprocessing otomatis data mahasiswa untuk prediksi dropout.
 
@@ -21,15 +39,15 @@ def preprocess_student_data(df_raw, selected_features=None, is_training=True, sc
     """
     df = df_raw.copy()
 
-    # Filter hanya Dropout & Graduate
+    # 1. Filter hanya Dropout & Graduate
     df = df[df['Status'] != 'Enrolled']
     df = df.reset_index(drop=True)
 
-    # Encode target label
+    # 2. Encode target label
     label_enc = LabelEncoder()
-    df['Status'] = label_enc.fit_transform(df['Status'])
+    df['Status'] = label_enc.fit_transform(df['Status'])    # Dropout 0, Graduate 1
 
-    # Fitur default jika tidak diberikan
+    # 3. Fitur default jika tidak diberikan
     if selected_features is None:
         selected_features = [
             'MothersQualification', 'FathersQualification',
@@ -41,10 +59,11 @@ def preprocess_student_data(df_raw, selected_features=None, is_training=True, sc
             'CurricularUnits2ndSemApproved', 'CurricularUnits2ndSemGrade'
         ]
 
-    # Pisahkan X dan y
+    # 4. Pisahkan X dan y
     X = df[selected_features]
     y = df['Status'] if is_training else None
 
+    # 5. Scaling
     if is_training:
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
@@ -65,3 +84,44 @@ def preprocess_student_data(df_raw, selected_features=None, is_training=True, sc
             print("❎ Hasil preprocessing tidak disimpan")
 
         return X_df
+
+
+# ---------- ENTRY‑POINT UNTUK COMMAND‑LINE ----------
+def _cli():
+    """
+    contoh:
+        python automate_alifia.py data/data_student_raw.csv \
+                                  preprocessing/preprocessing_output/data_student_preprocessed.csv
+    """
+    if len(sys.argv) != 3:
+        print("Usage: python preprocessing/automate_alifia.py <input_csv> <output_csv>")
+        sys.exit(1)
+
+    in_path = sys.argv[1]
+    out_path = sys.argv[2]
+
+    # Baca data mentah
+    df_raw = pd.read_csv(in_path)
+
+    # Jalankan preprocessing (mode training)
+    X_df, y, scaler = preprocess_student_data(df_raw, is_training=True)
+
+    # Gabungkan X dan y untuk disimpan mudah
+    df_preprocessed = pd.concat([X_df, y.rename('Status')], axis=1)
+
+    # Pastikan folder tujuan ada
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+
+    # Simpan ke CSV
+    df_preprocessed.to_csv(out_path, index=False)
+    print(f"✅ Dataset bersih disimpan di: {out_path}")
+
+    # Opsional – simpan scaler kalau diperlukan di workflow selanjutnya
+    scaler_path = os.path.join(os.path.dirname(out_path), "scaler.pkl")
+    joblib.dump(scaler, scaler_path)
+    print(f"✅ Scaler disimpan di : {scaler_path}")
+
+
+# Jalankan _cli() hanya jika file dipanggil langsung
+if __name__ == "__main__":
+    _cli()
