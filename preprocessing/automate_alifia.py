@@ -3,7 +3,7 @@
 automate_alifia.py
 ------------------
 • Dapat di‑import: from automate_alifia import preprocess_student_data
-• Dapat dijalankan via CLI  : python automate_alifia.py input.csv output.csv
+• Dapat dijalankan via CLI  : python preprocessing\automate_alifia.py input.csv output.csv
 """
 
 import sys
@@ -13,7 +13,9 @@ import joblib
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
-# ---------- FUNGSI PREPROCESSING UTAMA ----------
+# ----------------------------------
+# 🔁 fungsi Preprocessing Utama
+# ----------------------------------
 def preprocess_student_data(
         df_raw,
         selected_features=None,
@@ -86,11 +88,13 @@ def preprocess_student_data(
         return X_df
 
 
-# ---------- ENTRY‑POINT UNTUK COMMAND‑LINE ----------
+# ----------------------------------
+# 🔧 Entry Point Untuk Command Line
+# ----------------------------------
 def _cli():
     """
     contoh:
-        python automate_alifia.py data/data_student_raw.csv \
+        python preprocessing/automate_alifia.py data/data_student_raw.csv \
                                   preprocessing/preprocessing_output/data_student_preprocessed.csv
     """
     if len(sys.argv) != 3:
